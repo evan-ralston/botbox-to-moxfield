@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BotBox → Moxfield Converter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0c0d10; --surface: #13151a; --border: #1e2028; --border2: #2a2d38;
+    --text: #d8d4cc; --muted: #6a6860; --purple: #9b6dff;
+    --purple-dim: rgba(155,109,255,0.12); --gold: #d4a840;
+    --gold-dim: rgba(212,168,64,0.12); --green: #5dba7a;
+    --green-dim: rgba(93,186,122,0.1);
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; line-height: 1.6; }
+  body { background-image: radial-gradient(ellipse 70% 50% at 10% 20%, rgba(100,50,200,0.07) 0%, transparent 60%), radial-gradient(ellipse 50% 70% at 90% 80%, rgba(200,140,30,0.05) 0%, transparent 60%); }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 56px 24px 80px; }
+  h1 { font-family: 'Playfair Display', serif; font-size: clamp(28px,5vw,44px); font-weight: 900; background: linear-gradient(120deg,#b08aff 0%,#d4a840 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; margin-bottom: 10px; }
+  .tagline { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); margin-bottom: 52px; text-transform: uppercase; }
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 24px; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: #e8e0d0; margin-bottom: 20px; }
+  .bookmarklet-area { background: var(--bg); border: 2px dashed var(--border2); border-radius: 10px; padding: 28px 20px; text-align: center; margin: 20px 0; transition: border-color 0.2s; }
+  .bookmarklet-area:hover { border-color: var(--purple); }
+  .bm-btn { display: inline-block; background: linear-gradient(135deg,#6030b0,#9060e0); color: #fff !important; font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 500; padding: 14px 32px; border-radius: 8px; text-decoration: none !important; box-shadow: 0 4px 20px rgba(100,50,200,0.35); transition: transform 0.15s, box-shadow 0.15s; cursor: grab; }
+  .bm-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(100,50,200,0.45); }
+  .drag-hint { font-size: 11px; color: var(--muted); margin-top: 12px; letter-spacing: 0.06em; }
+  ol.steps { list-style: none; counter-reset: steps; }
+  ol.steps li { counter-increment: steps; display: flex; gap: 14px; align-items: flex-start; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; color: #b0a89e; line-height: 1.7; }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(steps); min-width: 24px; height: 24px; background: var(--purple-dim); border: 1px solid rgba(155,109,255,0.3); color: var(--purple); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; margin-top: 3px; }
+  .code-wrap { position: relative; margin: 16px 0; }
+  .code-block { background: #080a0e; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-size: 12px; line-height: 1.7; color: #a0d0a0; overflow-x: auto; white-space: pre; font-family: 'DM Mono', monospace; }
+  .copy-btn { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.06); border: 1px solid var(--border2); border-radius: 5px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; padding: 4px 10px; cursor: pointer; letter-spacing: 0.06em; transition: color 0.2s; }
+  .copy-btn:hover { color: var(--text); }
+  .info-box { border-radius: 8px; padding: 14px 16px; font-size: 13px; line-height: 1.7; margin: 16px 0; }
+  .info-gold { background: var(--gold-dim); border: 1px solid rgba(212,168,64,0.25); color: #c8a040; }
+  .info-green { background: var(--green-dim); border: 1px solid rgba(93,186,122,0.25); color: var(--green); }
+  .import-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; margin-top: 20px; }
+  .import-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+  .import-card .n { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 900; color: var(--border2); line-height: 1; margin-bottom: 8px; }
+  .import-card .d { font-size: 12px; color: #a0988e; line-height: 1.5; }
+  .import-card a { color: var(--purple); text-decoration: none; }
+  code { background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; font-size: 0.9em; color: #c0b8a8; }
+  strong { color: #e8dcc8; }
+  footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>BotBox → Moxfield</h1>
+  <p class="tagline">Export your BotBox packs to Moxfield collection CSV</p>
+
+  <div class="section">
+    <div class="section-title">⚗️ Bookmarklet — One Click Export</div>
+    <p style="font-size:13px;color:#a0988e;margin-bottom:20px;">
+      Drag the button below into your bookmarks bar. Open any BotBox pack page, wait for the cards to load, and click it.
+      The CSV will be named after the pack — e.g. <code>LEB - Beta Booster Box.csv</code>.
+    </p>
+    <div class="bookmarklet-area">
+      <a class="bm-btn" href="javascript:%28async%20function%28%29%7B%0A%20%20if%28typeof%20allCards%3D%3D%3D%27undefined%27%7C%7C%21allCards.length%29%7B%0A%20%20%20%20alert%28%27allCards%20not%20found.%20Make%20sure%20you%20are%20on%20a%20botbox.dev%2Fpack%2F...%20page%20with%20cards%20loaded.%27%29%3B%0A%20%20%20%20return%3B%0A%20%20%7D%0A%0A%20%20%2F%2F%20Get%20pack%20name%20from%20page%20title%2C%20strip%20%22%20-%20BotBox%20MTG%20Pack%20Simulator%22%20suffix%0A%20%20var%20packName%20%3D%20document.title.replace%28%2F%5Cs%2A-%5Cs%2ABotBox.%2A%24%2Fi%2C%20%27%27%29.trim%28%29%20%7C%7C%20%27botbox-pack%27%3B%0A%20%20%2F%2F%20Sanitize%20for%20use%20as%20a%20filename%0A%20%20var%20safeName%20%3D%20packName.replace%28%2F%5B%5C%2F%5C%5C%3F%25%2A%3A%7C%22%3C%3E%5D%2Fg%2C%20%27-%27%29%3B%0A%20%20var%20filename%20%3D%20safeName%20%2B%20%27.csv%27%3B%0A%0A%20%20var%20seen%20%3D%20%7B%7D%3B%0A%20%20allCards.forEach%28function%28c%29%7B%0A%20%20%20%20var%20key%20%3D%20c.uuid%20%7C%7C%20c.name%3B%0A%20%20%20%20if%28seen%5Bkey%5D%29%7B%0A%20%20%20%20%20%20seen%5Bkey%5D.qty%2B%2B%3B%0A%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20seen%5Bkey%5D%20%3D%20%7B%0A%20%20%20%20%20%20%20%20name%3A%20c.name%20%7C%7C%20%27Unknown%27%2C%0A%20%20%20%20%20%20%20%20set%3A%20%20c.set_code%20%7C%7C%20%27%27%2C%0A%20%20%20%20%20%20%20%20num%3A%20%20c.collector_number%20%7C%7C%20%27%27%2C%0A%20%20%20%20%20%20%20%20foil%3A%20%28c.foil%20%7C%7C%20c.etched%29%20%3F%20%27foil%27%20%3A%20%27%27%2C%0A%20%20%20%20%20%20%20%20qty%3A%20%201%0A%20%20%20%20%20%20%7D%3B%0A%20%20%20%20%7D%0A%20%20%7D%29%3B%0A%0A%20%20var%20rows%20%3D%20%5B%27Count%2CTradelist%20Count%2CName%2CEdition%2CCondition%2CLanguage%2CFoil%2CTags%2CLast%20Modified%2CCollector%20Number%27%5D%3B%0A%20%20Object.values%28seen%29.forEach%28function%28c%29%7B%0A%20%20%20%20var%20name%20%3D%20%27%22%27%20%2B%20c.name.replace%28%2F%22%2Fg%2C%20%27%22%22%27%29%20%2B%20%27%22%27%3B%0A%20%20%20%20rows.push%28%5Bc.qty%2C%20%27%27%2C%20name%2C%20c.set%2C%20%27Near%20Mint%27%2C%20%27English%27%2C%20c.foil%2C%20%27%27%2C%20%27%27%2C%20c.num%5D.join%28%27%2C%27%29%29%3B%0A%20%20%7D%29%3B%0A%0A%20%20var%20blob%20%3D%20new%20Blob%28%5Brows.join%28%27%5Cn%27%29%5D%2C%20%7Btype%3A%27text%2Fcsv%27%7D%29%3B%0A%20%20var%20a%20%3D%20document.createElement%28%27a%27%29%3B%0A%20%20a.href%20%3D%20URL.createObjectURL%28blob%29%3B%0A%20%20a.download%20%3D%20filename%3B%0A%20%20document.body.appendChild%28a%29%3B%20a.click%28%29%3B%20document.body.removeChild%28a%29%3B%0A%0A%20%20var%20total%20%3D%20allCards.length%3B%0A%20%20var%20unique%20%3D%20Object.keys%28seen%29.length%3B%0A%20%20alert%28%27Done%21%20Exported%20%27%20%2B%20unique%20%2B%20%27%20unique%20cards%20%28%27%20%2B%20total%20%2B%20%27%20total%29.%5CnSaved%20as%3A%20%27%20%2B%20filename%29%3B%0A%7D%29%28%29%3B">⚗️ BotBox → Moxfield</a>
+      <p class="drag-hint">← DRAG INTO YOUR BOOKMARKS BAR, then click it on a BotBox pack page →</p>
+    </div>
+    <ol class="steps">
+      <li>Show your bookmarks bar: <code>Ctrl+Shift+B</code> (Win/Linux) or <code>Cmd+Shift+B</code> (Mac)</li>
+      <li><strong>Drag</strong> the purple button above into your bookmarks bar — don't click it here</li>
+      <li>Open your BotBox pack page and wait for the cards to appear on screen</li>
+      <li>Click <strong>⚗️ BotBox → Moxfield</strong> in your bookmarks bar</li>
+      <li>A CSV named after the pack (e.g. <code>LEB - Beta Booster Box.csv</code>) downloads instantly — all pages included</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💻 Console Method (Fallback)</div>
+    <p style="font-size:13px;color:#a0988e;margin-bottom:4px;">
+      On the BotBox pack page, open DevTools (<code>F12</code>), go to <strong>Console</strong>, and paste this:
+    </p>
+    <div class="info-box info-gold">
+      <strong>Chrome:</strong> Type <code>allow pasting</code> in the console first and press Enter, then paste.
+    </div>
+    <div class="code-wrap">
+      <button class="copy-btn" id="copy-btn" onclick="copyScript()">COPY</button>
+      <pre class="code-block" id="script-display">(async function() {
+  if (typeof allCards === 'undefined' || !allCards.length) {
+    alert('allCards not found. Make sure you are on a botbox.dev/pack/... page with cards loaded.');
+    return;
+  }
+
+  // Get pack name from page title, strip " - BotBox MTG Pack Simulator" suffix
+  var packName = document.title.replace(/\s*-\s*BotBox.*$/i, '').trim() || 'botbox-pack';
+  var safeName = packName.replace(/[\/\\?%*:|"&lt;&gt;]/g, '-');
+  var filename = safeName + '.csv';
+
+  var seen = {};
+  allCards.forEach(function(c) {
+    var key = c.uuid || c.name;
+    if (seen[key]) {
+      seen[key].qty++;
+    } else {
+      seen[key] = {
+        name: c.name || 'Unknown',
+        set:  c.set_code || '',
+        num:  c.collector_number || '',
+        foil: (c.foil || c.etched) ? 'foil' : '',
+        qty:  1
+      };
+    }
+  });
+
+  var rows = ['Count,Tradelist Count,Name,Edition,Condition,Language,Foil,Tags,Last Modified,Collector Number'];
+  Object.values(seen).forEach(function(c) {
+    var name = '"' + c.name.replace(/"/g, '""') + '"';
+    rows.push([c.qty, '', name, c.set, 'Near Mint', 'English', c.foil, '', '', c.num].join(','));
+  });
+
+  var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+  var total = allCards.length;
+  var unique = Object.keys(seen).length;
+  alert('Done! Exported ' + unique + ' unique cards (' + total + ' total).\nSaved as: ' + filename);
+})();</pre>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📥 Import into Moxfield</div>
+    <div class="info-box info-green">
+      The CSV uses Moxfield's exact format — Name, Edition, Condition, Language, Foil, Collector Number — pulled directly from BotBox's own data.
+    </div>
+    <div class="import-grid">
+      <div class="import-card"><div class="n">1</div><div class="d">Download the CSV (named after your pack)</div></div>
+      <div class="import-card"><div class="n">2</div><div class="d">Go to <a href="https://moxfield.com/collection" target="_blank">moxfield.com/collection</a></div></div>
+      <div class="import-card"><div class="n">3</div><div class="d">Click <strong>Import → CSV</strong></div></div>
+      <div class="import-card"><div class="n">4</div><div class="d">Upload the file and confirm</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔧 Troubleshooting</div>
+    <ol class="steps">
+      <li><strong>"allCards not found"</strong> — The page hasn't finished loading yet. Wait a moment and try again.</li>
+      <li><strong>Bookmarklet does nothing</strong> — Some browsers silently block bookmarklets. Use the Console method instead.</li>
+      <li><strong>Safari</strong> — Go to <em>Settings → Advanced → Show features for web developers</em>, then use <em>Develop → Show JavaScript Console</em>.</li>
+      <li><strong>Wrong card count?</strong> — The export includes every card across all pages with duplicates counted correctly.</li>
+    </ol>
+  </div>
+
+  <footer>Not affiliated with BotBox or Moxfield &nbsp;·&nbsp; For personal use only</footer>
+</div>
+<script>
+var SCRIPT_TEXT = document.getElementById('script-display').textContent;
+function copyScript() {
+  navigator.clipboard.writeText(SCRIPT_TEXT).then(function() {
+    var b = document.getElementById('copy-btn');
+    b.textContent = 'COPIED!'; b.style.color = '#5dba7a';
+    setTimeout(function() { b.textContent = 'COPY'; b.style.color = ''; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
