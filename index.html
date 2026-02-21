@@ -135,10 +135,15 @@ function convert() {
 
   // Parse format: "{count} {name} [{set} {collector_number}]"
   // e.g. "2 Ancestral Recall [leb 48]"
+  var BASIC_LANDS = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes',
+    'Snow-Covered Plains', 'Snow-Covered Island', 'Snow-Covered Swamp',
+    'Snow-Covered Mountain', 'Snow-Covered Forest', 'Snow-Covered Wastes'];
+
   var lines = raw.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
   var rows = ['Count,Tradelist Count,Name,Edition,Condition,Language,Foil,Tags,Last Modified,Collector Number'];
   var parsed = 0;
   var skipped = [];
+  var landsRemoved = 0;
 
   lines.forEach(function(line) {
     // Match: leading number, then name, then [set collector_number] at end
@@ -147,6 +152,7 @@ function convert() {
       // Try without collector number: [set]
       var m2 = line.match(/^(\d+)\s+(.+?)\s+\[([a-z0-9]+)\]\s*$/i);
       if (m2) {
+        if (BASIC_LANDS.indexOf(m2[2]) !== -1) { landsRemoved++; return; }
         var name = '"' + m2[2].replace(/"/g, '""') + '"';
         rows.push([m2[1], '', name, m2[3].toLowerCase(), 'Near Mint', 'English', '', '', '', ''].join(','));
         parsed++;
@@ -155,6 +161,7 @@ function convert() {
       }
       return;
     }
+    if (BASIC_LANDS.indexOf(m[2]) !== -1) { landsRemoved++; return; }
     var qty = m[1];
     var name = '"' + m[2].replace(/"/g, '""') + '"';
     var set  = m[3].toLowerCase();
@@ -184,6 +191,7 @@ function convert() {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 
   var msg = '✓ Exported ' + parsed + ' card types to <strong>' + filename + '</strong>';
+  if (landsRemoved) msg += '<br><span style="opacity:0.7">Removed ' + landsRemoved + ' basic land type(s).</span>';
   if (skipped.length) msg += '<br><span style="opacity:0.7">Skipped ' + skipped.length + ' unrecognised line(s).</span>';
   showStatus('success', msg);
 }
