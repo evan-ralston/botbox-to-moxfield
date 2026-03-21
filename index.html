@@ -145,7 +145,7 @@ function convert(excludeLands) {
   var landsRemoved = 0;
 
   lines.forEach(function(line) {
-    var m = line.match(/^(\d+)\s+(.+?)\s+\[([a-z0-9]+)\s+(\d+)\]\s*$/i);
+    var m = line.match(/^(\d+)\s+(.+?)\s+\[([a-z0-9]+)\s+(\d+[a-z]*)\]\s*$/i);
     if (!m) {
       var m2 = line.match(/^(\d+)\s+(.+?)\s+\[([a-z0-9]+)\]\s*$/i);
       if (m2) {
